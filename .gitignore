@@ -1,0 +1,10 @@
+# Node modules
+AssetDisposal-Portable/node_modules/
+AssetDisposal-Portable/backend/node_modules/
+
+# Local environment files
+AssetDisposal-Portable/backend/.env
+
+# npm logs
+npm-debug.log*
+package-lock.json

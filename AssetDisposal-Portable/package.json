@@ -1,0 +1,16 @@
+{
+  "name": "asset-disposal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Asset Disposal root workspace for backend and frontend PM2 services",
+  "scripts": {
+    "start:frontend": "node frontend-server.js",
+    "start:backend": "cd backend && node server.js",
+    "install:frontend": "npm install express http-proxy-middleware --save",
+    "install:backend": "cd backend && npm install"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "http-proxy-middleware": "^2.0.6"
+  }
+}
