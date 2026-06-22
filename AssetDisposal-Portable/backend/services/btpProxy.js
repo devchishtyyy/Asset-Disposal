@@ -1,15 +1,10 @@
 'use strict';
 
-/**
- * BTP Integration Suite Proxy
- * Routes all SAP and SuccessFactors API calls through the SAP BTP Integration Suite
- * Central proxy endpoint: https://devspace.test.apimanagement.eu10.hana.ondemand.com/asset/values
- */
-
 const { fetch: undiciFetch } = require('undici');
 
-const BTP_BASE_URL = process.env.BTP_PROXY_URL || 'https://devspace.test.apimanagement.eu10.hana.ondemand.com/asset/values';
-const BTP_API_KEY = process.env.BTP_API_KEY || '';
+const BTP_BASE_URL  = process.env.BTP_PROXY_URL  || 'https://devspace.test.apimanagement.eu10.hana.ondemand.com/asset/values';
+const BTP_LOGIN_URL = process.env.BTP_LOGIN_URL  || '';
+const BTP_API_KEY   = process.env.BTP_API_KEY    || '';
 
 /**
  * Generic BTP proxy call
@@ -133,31 +128,75 @@ async function fetchAssetFromSAP(assetNo, companyCode, sapUser, sapPass) {
 }
 
 /**
- * Login with SuccessFactors through BTP Integration Suite
+ * POST credentials directly to the BTP Integration Suite Login iFlow.
+ * Uses BTP_LOGIN_URL (dedicated endpoint, no ?action= routing).
+ */
+async function callLoginProxy(userId, password) {
+  const url = BTP_LOGIN_URL;
+  if (!url) {
+    console.error('[BTP Login] BTP_LOGIN_URL is not configured');
+    throw new Error('BTP_NETWORK_ERROR');
+  }
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+
+  if (BTP_API_KEY) {
+    headers['Authorization'] = `Bearer ${BTP_API_KEY}`;
+  }
+
+  let res;
+  try {
+    res = await undiciFetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ userId, password }),
+    });
+  } catch (err) {
+    console.error('[BTP Login] Network error:', err.message);
+    throw new Error('BTP_NETWORK_ERROR');
+  }
+
+  if (res.status === 401 || res.status === 403) {
+    throw new Error('BTP_UNAUTHORIZED');
+  }
+  if (!res.ok) {
+    console.error(`[BTP Login] HTTP ${res.status} error`);
+    throw new Error('BTP_NETWORK_ERROR');
+  }
+
+  try {
+    return await res.json();
+  } catch (err) {
+    console.error('[BTP Login] JSON parse error:', err.message);
+    throw new Error('BTP_NETWORK_ERROR');
+  }
+}
+
+/**
+ * Login with SuccessFactors through BTP Integration Suite Login iFlow.
  * @param {string} userId - User ID / Employee number
  * @param {string} password - User password
  */
 async function loginWithSF(userId, password) {
   try {
-    const response = await callBtpProxy('auth/login', {
-      userId,
-      password,
-    });
+    const response = await callLoginProxy(userId, password);
 
     if (!response.ok) {
       throw new Error('Invalid credentials or authentication service unavailable.');
     }
 
-    // Map response to expected format
     const userInfo = response.data || response;
     return {
-      username:       userInfo.username       || userInfo.userId || userId,
-      name:           userInfo.name           || userInfo.username || userId,
+      username:        userInfo.username        || userInfo.userId || userId,
+      name:            userInfo.name            || userInfo.username || userId,
       sfAuthenticated: userInfo.sfAuthenticated !== false,
-      jobTitle:       userInfo.jobTitle       || '',
-      department:     userInfo.department     || '',
-      businessUnit:   userInfo.businessUnit   || '',
-      company:        userInfo.company        || '',
+      jobTitle:        userInfo.jobTitle        || '',
+      department:      userInfo.department      || '',
+      businessUnit:    userInfo.businessUnit    || '',
+      company:         userInfo.company         || '',
     };
   } catch (err) {
     if (err.message === 'BTP_UNAUTHORIZED') {
