@@ -1,16 +1,16 @@
 'use strict';
 
-const { fetch: undiciFetch } = require('undici');
 const axios = require('axios');
 const https = require('https');
 
-// ── SAP Asset proxy (undici, action-based routing) ───────────────────────────
-const BTP_BASE_URL = process.env.BTP_PROXY_URL || 'https://devspace.test.apimanagement.eu10.hana.ondemand.com/asset/values';
+// ── SAP Asset proxy (action-based routing) ───────────────────────────────────
+const BTP_BASE_URL = process.env.BTP_PROXY_URL || 'https://devspace.test.apimanagement.eu10.hana.ondemand.com:443/asset/values';
 const BTP_API_KEY  = process.env.BTP_API_KEY   || '';
 
 // ── BTP Login iFlow (axios, Basic auth, DEV) ─────────────────────────────────
 const axiosInstance = axios.create({
   httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+  headers: { 'Accept-Encoding': 'gzip, deflate' },
 });
 
 const LOGIN_CREDENTIAL = 'sb-14500df7-5c11-4f60-a289-951ab9b56e65!b379530|it-rt-integration-suite-q07hbh9w!b410603:e287accb-c183-4b15-abf9-36c43241f016$ftnvyFI2U3mk8bzyWY7vW4ioM2P0DvL8B5ljByzdApU=';
@@ -33,31 +33,26 @@ async function callBtpProxy(action, payload) {
     headers['Authorization'] = `Bearer ${BTP_API_KEY}`;
   }
 
-  let res;
+  let response;
   try {
-    res = await undiciFetch(url, {
-      method: 'POST',
+    response = await axiosInstance.post(url, payload, {
       headers,
-      body: JSON.stringify(payload),
+      timeout: 60000,
+      validateStatus: () => true,
     });
   } catch (err) {
     console.error('[BTP Proxy] Network error:', err.message);
     throw new Error('BTP_NETWORK_ERROR');
   }
 
-  if (res.status === 401 || res.status === 403) throw new Error('BTP_UNAUTHORIZED');
-  if (res.status === 404)                       throw new Error('BTP_NOT_FOUND');
-  if (!res.ok) {
-    console.error(`[BTP Proxy] HTTP ${res.status} error`);
+  if (response.status === 401 || response.status === 403) throw new Error('BTP_UNAUTHORIZED');
+  if (response.status === 404)                            throw new Error('BTP_NOT_FOUND');
+  if (response.status >= 500) {
+    console.error(`[BTP Proxy] HTTP ${response.status} error`);
     throw new Error('BTP_NETWORK_ERROR');
   }
 
-  try {
-    return await res.json();
-  } catch (err) {
-    console.error('[BTP Proxy] JSON parse error:', err.message);
-    throw new Error('BTP_NETWORK_ERROR');
-  }
+  return response.data;
 }
 
 /**
