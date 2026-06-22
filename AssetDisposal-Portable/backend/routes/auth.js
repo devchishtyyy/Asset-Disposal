@@ -34,7 +34,7 @@ const loginLimiter = rateLimit({
 
 // POST /api/auth/login
 router.post('/login', loginLimiter, async (req, res) => {
-  const { userId, password, environment } = req.body;
+  const { userId, password } = req.body;
 
   if (!userId || !password) {
     return res.status(400).json({ error: 'userId and password are required.' });
@@ -46,7 +46,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     if (DEV_TEST_ACCOUNTS[userId] && password === DEV_PASSWORD) {
       userInfo = DEV_TEST_ACCOUNTS[userId];
     } else {
-      userInfo = await loginWithSF(userId, password, environment);
+      userInfo = await loginWithSF(userId, password);
     }
   } catch (err) {
     return res.status(401).json({ error: err.message || 'Authentication failed.' });

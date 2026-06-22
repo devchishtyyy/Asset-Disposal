@@ -1,25 +1,10 @@
 'use strict';
 
 const { fetch: undiciFetch } = require('undici');
-const axios = require('axios');
-const https = require('https');
 
-const axiosInstance = axios.create({
-  httpsAgent: new https.Agent({ rejectUnauthorized: false }),
-});
-
-const BTP_BASE_URL = process.env.BTP_PROXY_URL || 'https://devspace.test.apimanagement.eu10.hana.ondemand.com/asset/values';
-const BTP_API_KEY  = process.env.BTP_API_KEY   || '';
-
-const SAP_CREDENTIALS = {
-  dev: process.env.BTP_LOGIN_CREDENTIALS_DEV || '',
-  prd: process.env.BTP_LOGIN_CREDENTIALS_PRD || '',
-};
-
-const LOGIN_URLS = {
-  dev: process.env.BTP_LOGIN_URL_DEV || 'https://integration-suite-q07hbh9w.it-cpi026-rt.cfapps.eu10-002.hana.ondemand.com/http/Login',
-  prd: process.env.BTP_LOGIN_URL_PRD || 'https://integration-suite-prd-ud55bnea.it-cpi026-rt.cfapps.eu10-002.hana.ondemand.com/http/Login',
-};
+const BTP_BASE_URL  = process.env.BTP_PROXY_URL  || 'https://devspace.test.apimanagement.eu10.hana.ondemand.com/asset/values';
+const BTP_LOGIN_URL = process.env.BTP_LOGIN_URL  || '';
+const BTP_API_KEY   = process.env.BTP_API_KEY    || '';
 
 /**
  * Generic BTP proxy call
@@ -143,60 +128,85 @@ async function fetchAssetFromSAP(assetNo, companyCode, sapUser, sapPass) {
 }
 
 /**
- * Login via BTP Integration Suite Login iFlow.
- * Mirrors the pattern used in the handheld app (axios + Basic Auth + I_UNAME/I_PWD).
- * @param {string} userId - Employee number
- * @param {string} password - SAP/SF password
- * @param {string} [environment] - 'prd' | '300' for production, anything else = dev
+ * POST credentials directly to the BTP Integration Suite Login iFlow.
+ * Uses BTP_LOGIN_URL (dedicated endpoint, no ?action= routing).
  */
-async function loginWithSF(userId, password, environment) {
-  const env = (environment === 'prd' || environment === '300') ? 'prd' : 'dev';
-  const apiUrl     = LOGIN_URLS[env];
-  const credentials = SAP_CREDENTIALS[env];
-
-  if (!credentials) {
-    console.error(`[BTP Login] BTP_LOGIN_CREDENTIALS_${env.toUpperCase()} is not configured`);
-    throw new Error('Unable to reach authentication service. Check your network and try again.');
+async function callLoginProxy(userId, password) {
+  const url = BTP_LOGIN_URL;
+  if (!url) {
+    console.error('[BTP Login] BTP_LOGIN_URL is not configured');
+    throw new Error('BTP_NETWORK_ERROR');
   }
 
-  const authHeader = `Basic ${Buffer.from(credentials).toString('base64')}`;
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
 
-  let response;
+  if (BTP_API_KEY) {
+    headers['Authorization'] = `Bearer ${BTP_API_KEY}`;
+  }
+
+  let res;
   try {
-    response = await axiosInstance.post(apiUrl, {
-      I_UNAME: userId,
-      I_PWD:   password,
-    }, {
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': authHeader,
-      },
-      timeout: 60000,
-      validateStatus: () => true,
+    res = await undiciFetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ userId, password }),
     });
   } catch (err) {
     console.error('[BTP Login] Network error:', err.message);
-    throw new Error('Unable to reach authentication service. Check your network and try again.');
+    throw new Error('BTP_NETWORK_ERROR');
   }
 
-  const sapResponse = response.data;
-  const result = sapResponse?.['ns0:Z_WM_HANDHELD_LOGINResponse'];
-
-  if (result?.E_TYPE !== 'S') {
-    const msg = result?.E_MESSAGE || 'Authentication failed';
-    console.error('[BTP Login] Auth rejected:', msg);
-    throw new Error(msg);
+  if (res.status === 401 || res.status === 403) {
+    throw new Error('BTP_UNAUTHORIZED');
+  }
+  if (!res.ok) {
+    console.error(`[BTP Login] HTTP ${res.status} error`);
+    throw new Error('BTP_NETWORK_ERROR');
   }
 
-  return {
-    username:        userId,
-    name:            result.E_FULLNAME || result.E_NAME || userId,
-    sfAuthenticated: true,
-    jobTitle:        result.E_JOB_TITLE   || result.E_JOBTITLE   || '',
-    department:      result.E_DEPARTMENT  || result.E_DEPT        || '',
-    businessUnit:    result.E_BUSINESS_UNIT || result.E_BU        || '',
-    company:         result.E_COMPANY     || '',
-  };
+  try {
+    return await res.json();
+  } catch (err) {
+    console.error('[BTP Login] JSON parse error:', err.message);
+    throw new Error('BTP_NETWORK_ERROR');
+  }
+}
+
+/**
+ * Login with SuccessFactors through BTP Integration Suite Login iFlow.
+ * @param {string} userId - User ID / Employee number
+ * @param {string} password - User password
+ */
+async function loginWithSF(userId, password) {
+  try {
+    const response = await callLoginProxy(userId, password);
+
+    if (!response.ok) {
+      throw new Error('Invalid credentials or authentication service unavailable.');
+    }
+
+    const userInfo = response.data || response;
+    return {
+      username:        userInfo.username        || userInfo.userId || userId,
+      name:            userInfo.name            || userInfo.username || userId,
+      sfAuthenticated: userInfo.sfAuthenticated !== false,
+      jobTitle:        userInfo.jobTitle        || '',
+      department:      userInfo.department      || '',
+      businessUnit:    userInfo.businessUnit    || '',
+      company:         userInfo.company         || '',
+    };
+  } catch (err) {
+    if (err.message === 'BTP_UNAUTHORIZED') {
+      throw new Error('Invalid SuccessFactors credentials. Please try again.');
+    }
+    if (err.message === 'BTP_NETWORK_ERROR') {
+      throw new Error('Unable to reach authentication service. Check your network and try again.');
+    }
+    throw err;
+  }
 }
 
 module.exports = {
