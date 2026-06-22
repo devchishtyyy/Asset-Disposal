@@ -21,6 +21,8 @@ const DEV_TEST_ACCOUNTS = {
   'T016':     { username: 'T016',     name: 'Test CFO',             sfAuthenticated: false },
   'T017':     { username: 'T017',     name: 'Test CEO',             sfAuthenticated: false },
 };
+const DEV_PASSWORD = 'test123';
+
 // Rate-limit login attempts
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -40,8 +42,8 @@ router.post('/login', loginLimiter, async (req, res) => {
 
   let userInfo;
   try {
-    // Test accounts bypass BTP entirely — any password accepted
-    if (DEV_TEST_ACCOUNTS[userId]) {
+    // Dev test accounts bypass SF
+    if (DEV_TEST_ACCOUNTS[userId] && password === DEV_PASSWORD) {
       userInfo = DEV_TEST_ACCOUNTS[userId];
     } else {
       userInfo = await loginWithSF(userId, password);
