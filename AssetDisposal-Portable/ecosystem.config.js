@@ -6,11 +6,11 @@ module.exports = {
       cwd: __dirname,
       env: {
         NODE_ENV: 'production',
-        PORT: 6000,
+        PORT: 6002,
       },
       env_development: {
         NODE_ENV: 'development',
-        PORT: 6000,
+        PORT: 6002,
       },
     },
     {
@@ -19,12 +19,12 @@ module.exports = {
       cwd: __dirname,
       env: {
         NODE_ENV: 'production',
-        PORT: 6001,
+        PORT: 6003,
         DIST_PATH: './dist',
       },
       env_development: {
         NODE_ENV: 'development',
-        PORT: 6001,
+        PORT: 6003,
         DIST_PATH: './dist',
       },
     },

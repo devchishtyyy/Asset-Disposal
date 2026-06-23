@@ -5,9 +5,9 @@ const path    = require('path');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app        = express();
-const port       = parseInt(process.env.PORT || '6001', 10);
+const port       = parseInt(process.env.PORT || '6003', 10);
 const distPath   = path.resolve(process.env.DIST_PATH || './dist');
-const backendUrl = process.env.BACKEND_URL || 'http://localhost:6000';
+const backendUrl = process.env.BACKEND_URL || 'http://localhost:6002';
 
 // ── Security headers ────────────────────────────────────────────────────────────
 // Applied to every response served by this process (static files + SPA fallback).
