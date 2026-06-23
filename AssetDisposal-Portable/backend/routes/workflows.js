@@ -122,10 +122,16 @@ router.put('/:id/approve', authenticate, async (req, res) => {
   const approval     = req.body;
   const newApprovals = [...wf.approvals, approval];
 
-  // Advance past empty hierarchy slots
+  const currentStepInfo  = company.hierarchy[wf.currentStep];
+  const bypassWasteSale  = currentStepInfo?.stepKey === 'finance' && approval.bypassWasteSale === true;
+
+  // Advance past empty hierarchy slots and (if finance bypassed) waste_sale step
   let nextStep = wf.currentStep + 1;
-  while (nextStep < company.hierarchy.length && !company.hierarchy[nextStep]?.empNo?.trim()) {
-    nextStep++;
+  while (nextStep < company.hierarchy.length) {
+    const slot = company.hierarchy[nextStep];
+    if (!slot?.empNo?.trim()) { nextStep++; continue; }
+    if (bypassWasteSale && slot.stepKey === 'waste_sale') { nextStep++; continue; }
+    break;
   }
   const isComplete = nextStep >= company.hierarchy.length;
   const newStatus  = isComplete ? 'approved' : 'pending';
