@@ -20,19 +20,11 @@ function appendCredentials(userId, password) {
 
 const router = express.Router();
 
-// Dev test accounts — mirrors frontend sfAuth.js
-const DEV_TEST_ACCOUNTS = {
-  '10009671': { username: '10009671', name: 'Master Admin',         sfAuthenticated: false },
-  'T001':     { username: 'T001',     name: 'Test Initiator',       sfAuthenticated: false },
-  'T010':     { username: 'T010',     name: 'Test Dept Incharge',   sfAuthenticated: false },
-  'T011':     { username: 'T011',     name: 'Test Finance',         sfAuthenticated: false },
-  'T012':     { username: 'T012',     name: 'Test Biz Controller',  sfAuthenticated: false },
-  'T013':     { username: 'T013',     name: 'Test BU Head',         sfAuthenticated: false },
-  'T014':     { username: 'T014',     name: 'Test Waste Sale',      sfAuthenticated: false },
-  'T015':     { username: 'T015',     name: 'Test Fin Controller',  sfAuthenticated: false },
-  'T016':     { username: 'T016',     name: 'Test CFO',             sfAuthenticated: false },
-  'T017':     { username: 'T017',     name: 'Test CEO',             sfAuthenticated: false },
-};
+// Dev test accounts — only active when NODE_ENV !== 'production'
+// All real users (including you as master admin 10009671) authenticate via SuccessFactors in production
+const DEV_TEST_ACCOUNTS = process.env.NODE_ENV !== 'production' ? {
+  '10009671': { username: '10009671', name: 'Master Admin', sfAuthenticated: false },
+} : {};
 const DEV_PASSWORD = 'test123';
 
 // Rate-limit login attempts (IP-based; brute force module handles per-userId locking)
