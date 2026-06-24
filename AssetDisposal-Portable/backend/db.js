@@ -49,6 +49,21 @@ db.exec(`
   );
 `);
 
+// ── Seeded admins (always present, survive DB wipes) ───────────────────────────
+const SEEDED_ADMINS = [
+  { empNo: '30000883', name: '', addedBy: '10009671' },
+];
+
+const stmtSeedAdmin = db.prepare(`
+  INSERT INTO admins (emp_no, name, added_by, added_at)
+  VALUES (?, ?, ?, datetime('now'))
+  ON CONFLICT(emp_no) DO NOTHING
+`);
+
+for (const a of SEEDED_ADMINS) {
+  stmtSeedAdmin.run(a.empNo, a.name, a.addedBy);
+}
+
 // ── Admin config helpers ────────────────────────────────────────────────────────
 
 const DEFAULT_HIERARCHY_STEPS = [
