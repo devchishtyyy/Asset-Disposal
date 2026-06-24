@@ -40,6 +40,13 @@ db.exec(`
     approvals           TEXT    NOT NULL DEFAULT '[]',
     rejection_info      TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS admins (
+    emp_no   TEXT PRIMARY KEY,
+    name     TEXT NOT NULL DEFAULT '',
+    added_by TEXT NOT NULL,
+    added_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 // ── Admin config helpers ────────────────────────────────────────────────────────
@@ -209,6 +216,34 @@ function deleteWorkflow(id) {
   stmtDeleteWorkflow.run(id);
 }
 
+// ── Admin management ────────────────────────────────────────────────────────────
+
+const stmtGetAdmins    = db.prepare('SELECT emp_no, name, added_by, added_at FROM admins ORDER BY added_at ASC');
+const stmtIsAdmin      = db.prepare('SELECT 1 FROM admins WHERE emp_no = ?');
+const stmtAddAdmin     = db.prepare(`
+  INSERT INTO admins (emp_no, name, added_by, added_at)
+  VALUES (?, ?, ?, datetime('now'))
+  ON CONFLICT(emp_no) DO UPDATE SET name = excluded.name, added_by = excluded.added_by, added_at = excluded.added_at
+`);
+const stmtRemoveAdmin  = db.prepare('DELETE FROM admins WHERE emp_no = ?');
+
+function getAdmins() {
+  return stmtGetAdmins.all().map((r) => ({ empNo: r.emp_no, name: r.name, addedBy: r.added_by, addedAt: r.added_at }));
+}
+
+function isAdmin(empNo) {
+  if (!empNo) return false;
+  return !!stmtIsAdmin.get(empNo);
+}
+
+function addAdmin(empNo, name, addedBy) {
+  stmtAddAdmin.run(empNo, name || '', addedBy);
+}
+
+function removeAdmin(empNo) {
+  stmtRemoveAdmin.run(empNo);
+}
+
 // ── Role helpers (mirrors frontend companies.js) ───────────────────────────────
 
 function getUserMemberships(empNo, adminConfig) {
@@ -247,6 +282,10 @@ module.exports = {
   insertWorkflow,
   updateWorkflow,
   deleteWorkflow,
+  getAdmins,
+  isAdmin,
+  addAdmin,
+  removeAdmin,
   getUserMemberships,
   getWorkflowId,
   getDefaultAdminConfig,

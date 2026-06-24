@@ -22,7 +22,7 @@ const router = express.Router();
 
 // Dev test accounts — mirrors frontend sfAuth.js
 const DEV_TEST_ACCOUNTS = {
-  '10009471': { username: '10009471', name: 'Super Admin',         sfAuthenticated: false },
+  '10009671': { username: '10009671', name: 'Master Admin',         sfAuthenticated: false },
   'T001':     { username: 'T001',     name: 'Test Initiator',       sfAuthenticated: false },
   'T010':     { username: 'T010',     name: 'Test Dept Incharge',   sfAuthenticated: false },
   'T011':     { username: 'T011',     name: 'Test Finance',         sfAuthenticated: false },

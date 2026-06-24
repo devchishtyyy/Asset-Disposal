@@ -2,13 +2,15 @@
 
 const jwt = require('jsonwebtoken');
 const { isBlacklisted } = require('./tokenBlacklist');
+const { isAdmin } = require('../db');
 
-const SUPER_ADMIN_EMP_NO = '10009471';
+// empNo 10009671 is the master controller — hardcoded, cannot be demoted via API
+const MASTER_ADMIN_EMP_NO = '10009671';
+const SUPER_ADMIN_EMP_NO  = MASTER_ADMIN_EMP_NO; // backward-compat alias
 
 /**
  * Express middleware — verifies the Bearer JWT in the Authorization header.
- * Attaches the decoded payload to req.user and the raw token string to req.token
- * (req.token is needed by the logout endpoint to blacklist the specific token).
+ * Attaches the decoded payload to req.user and the raw token string to req.token.
  */
 function authenticate(req, res, next) {
   const header = req.headers['authorization'] || '';
@@ -34,13 +36,36 @@ function authenticate(req, res, next) {
 }
 
 /**
- * Middleware — restrict a route to the super admin only.
+ * Middleware — restrict a route to any admin user.
+ * Accepts the master admin (10009671) or any empNo stored in the admins table.
  */
-function requireSuperAdmin(req, res, next) {
-  if (req.user?.empNo !== SUPER_ADMIN_EMP_NO) {
-    return res.status(403).json({ error: 'Super admin access required.' });
+function requireAdmin(req, res, next) {
+  const empNo = req.user?.empNo;
+  if (empNo === MASTER_ADMIN_EMP_NO || isAdmin(empNo)) {
+    return next();
+  }
+  return res.status(403).json({ error: 'Admin access required.' });
+}
+
+/**
+ * Middleware — restrict a route to the master admin only.
+ * Used for operations that should never be delegated (e.g., granting/revoking admin rights).
+ */
+function requireMasterAdmin(req, res, next) {
+  if (req.user?.empNo !== MASTER_ADMIN_EMP_NO) {
+    return res.status(403).json({ error: 'Master admin access required.' });
   }
   next();
 }
 
-module.exports = { authenticate, requireSuperAdmin, SUPER_ADMIN_EMP_NO };
+// Keep requireSuperAdmin as an alias so existing route imports don't break
+const requireSuperAdmin = requireMasterAdmin;
+
+module.exports = {
+  authenticate,
+  requireAdmin,
+  requireSuperAdmin,
+  requireMasterAdmin,
+  SUPER_ADMIN_EMP_NO,
+  MASTER_ADMIN_EMP_NO,
+};

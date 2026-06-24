@@ -1,11 +1,11 @@
 'use strict';
 
 const express  = require('express');
-const { authenticate, requireSuperAdmin, SUPER_ADMIN_EMP_NO } = require('../middleware/auth');
+const { authenticate, requireAdmin, SUPER_ADMIN_EMP_NO } = require('../middleware/auth');
 const {
   loadAdminConfig, getAllWorkflows, getWorkflow,
   insertWorkflow, updateWorkflow, deleteWorkflow,
-  getUserMemberships, getWorkflowId,
+  getUserMemberships, getWorkflowId, isAdmin,
 } = require('../db');
 const { notifyApproverPending, notifyNextApproverAfterApproval } = require('../services/email');
 
@@ -15,7 +15,7 @@ const router = express.Router();
 
 /** Filter workflows down to what this user is allowed to see */
 function filterWorkflowsForUser(all, empNo, adminConfig) {
-  if (empNo === SUPER_ADMIN_EMP_NO) return all;
+  if (empNo === SUPER_ADMIN_EMP_NO || isAdmin(empNo)) return all;
 
   const memberships = getUserMemberships(empNo, adminConfig);
   return all.filter((wf) =>
@@ -184,8 +184,8 @@ router.put('/:id/reject', authenticate, (req, res) => {
   res.json({ ok: true });
 });
 
-// ── DELETE /api/workflows/:id  — super admin only ───────────────────────────────
-router.delete('/:id', authenticate, requireSuperAdmin, (req, res) => {
+// ── DELETE /api/workflows/:id  — admin only ─────────────────────────────────────
+router.delete('/:id', authenticate, requireAdmin, (req, res) => {
   const wf = getWorkflow(req.params.id);
   if (!wf) return res.status(404).json({ error: 'Workflow not found.' });
   deleteWorkflow(req.params.id);
