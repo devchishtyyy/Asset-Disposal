@@ -154,23 +154,55 @@ function saveAdminConfig(config) {
   stmtUpsertConfig.run(JSON.stringify(config));
 }
 
+// ── Effective hierarchy builder ─────────────────────────────────────────────────
+
+/**
+ * Builds the full 8-step effective hierarchy for a workflow by merging
+ * the initiator's per-initiator approvers (dept_incharge, finance, bu_head)
+ * with the company-wide hierarchy steps.
+ */
+function buildEffectiveHierarchy(initiator, companyHierarchy) {
+  const companyMap = {};
+  for (const step of (companyHierarchy || [])) {
+    companyMap[step.stepKey] = step;
+  }
+  const initiatorApprovers = initiator?.approvers || {};
+  const INITIATOR_KEYS = ['dept_incharge', 'finance', 'bu_head'];
+
+  return DEFAULT_HIERARCHY_STEPS.map((step) => {
+    if (INITIATOR_KEYS.includes(step.stepKey)) {
+      const ap = initiatorApprovers[step.stepKey] || {};
+      return { ...step, empNo: ap.empNo || '', name: ap.name || '', email: ap.email || '' };
+    } else {
+      const cs = companyMap[step.stepKey] || {};
+      return { ...step, empNo: cs.empNo || '', name: cs.name || '', email: cs.email || '' };
+    }
+  });
+}
+
 // ── Workflow DB operations ──────────────────────────────────────────────────────
+
+// Migrate existing DB to add effective_hierarchy column if not present
+try {
+  db.exec('ALTER TABLE workflows ADD COLUMN effective_hierarchy TEXT');
+} catch (_) { /* column already exists */ }
 
 function rowToWorkflow(row) {
   if (!row) return null;
   return {
-    id:                 row.id,
-    companyId:          row.company_id,
-    assetNumber:        row.asset_number,
-    status:             row.status,
-    currentStep:        row.current_step,
-    submittedByEmpNo:   row.submitted_by_emp_no,
-    submittedByName:    row.submitted_by_name,
-    submittedAt:        row.submitted_at,
-    updatedAt:          row.updated_at,
-    formData:           JSON.parse(row.form_data),
-    approvals:          JSON.parse(row.approvals),
-    rejectionInfo:      row.rejection_info ? JSON.parse(row.rejection_info) : null,
+    id:                  row.id,
+    companyId:           row.company_id,
+    assetNumber:         row.asset_number,
+    status:              row.status,
+    currentStep:         row.current_step,
+    submittedByEmpNo:    row.submitted_by_emp_no,
+    submittedByName:     row.submitted_by_name,
+    submittedAt:         row.submitted_at,
+    updatedAt:           row.updated_at,
+    formData:            JSON.parse(row.form_data),
+    approvals:           JSON.parse(row.approvals),
+    rejectionInfo:       row.rejection_info ? JSON.parse(row.rejection_info) : null,
+    effectiveHierarchy:  row.effective_hierarchy ? JSON.parse(row.effective_hierarchy) : null,
   };
 }
 
@@ -180,8 +212,8 @@ const stmtInsertWorkflow   = db.prepare(`
   INSERT INTO workflows
     (id, company_id, asset_number, status, current_step,
      submitted_by_emp_no, submitted_by_name, submitted_at, updated_at,
-     form_data, approvals, rejection_info)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     form_data, approvals, rejection_info, effective_hierarchy)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 const stmtUpdateWorkflow   = db.prepare(`
   UPDATE workflows
@@ -212,6 +244,7 @@ function insertWorkflow(wf) {
     JSON.stringify(wf.formData),
     JSON.stringify(wf.approvals ?? []),
     wf.rejectionInfo ? JSON.stringify(wf.rejectionInfo) : null,
+    wf.effectiveHierarchy ? JSON.stringify(wf.effectiveHierarchy) : null,
   );
 }
 
@@ -261,10 +294,13 @@ function removeAdmin(empNo) {
 
 // ── Role helpers (mirrors frontend companies.js) ───────────────────────────────
 
+const INITIATOR_APPROVER_KEYS = ['dept_incharge', 'finance', 'bu_head'];
+
 function getUserMemberships(empNo, adminConfig) {
   if (!empNo || !adminConfig?.companies) return [];
   const result = [];
   for (const [companyId, company] of Object.entries(adminConfig.companies)) {
+    // Check if this person is an initiator
     const initiator = (company.initiators || []).find(
       (i) => i.empNo?.trim() === empNo.trim()
     );
@@ -272,12 +308,30 @@ function getUserMemberships(empNo, adminConfig) {
       result.push({ type: 'initiator', companyId, empNo: initiator.empNo, name: initiator.name || empNo, email: initiator.email || '' });
       continue;
     }
+
+    // Check company-level hierarchy steps
     const stepIndex = (company.hierarchy || []).findIndex(
       (h) => h.empNo?.trim() === empNo.trim()
     );
     if (stepIndex >= 0) {
       const step = company.hierarchy[stepIndex];
       result.push({ type: 'approver', companyId, stepIndex, stepKey: step.stepKey, stepLabel: step.label, empNo: step.empNo, name: step.name || empNo, email: step.email || '' });
+      continue;
+    }
+
+    // Check per-initiator approvers (dept_incharge, finance, bu_head)
+    // A person may be assigned to one of these roles for a specific initiator
+    const seenStepKeys = new Set();
+    for (const ini of (company.initiators || [])) {
+      for (const stepKey of INITIATOR_APPROVER_KEYS) {
+        if (seenStepKeys.has(stepKey)) continue;
+        const ap = ini.approvers?.[stepKey];
+        if (ap?.empNo?.trim() === empNo.trim()) {
+          const stepMeta = DEFAULT_HIERARCHY_STEPS.find((s) => s.stepKey === stepKey);
+          result.push({ type: 'approver', companyId, stepIndex: -1, stepKey, stepLabel: stepMeta?.label || stepKey, empNo: ap.empNo, name: ap.name || empNo, email: ap.email || '', isPerInitiator: true });
+          seenStepKeys.add(stepKey);
+        }
+      }
     }
   }
   return result;
@@ -305,5 +359,7 @@ module.exports = {
   getWorkflowId,
   getDefaultAdminConfig,
   buildTestAdminConfig,
+  buildEffectiveHierarchy,
   DEFAULT_HIERARCHY_STEPS,
+  INITIATOR_APPROVER_KEYS,
 };
