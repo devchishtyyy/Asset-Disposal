@@ -13,7 +13,48 @@ const SF_AUTH_URL   = 'https://api44.sapsf.com/odata/v2/Background_Community?$to
 const SF_COMPANY_ID = 'packagesli';
 
 // ── SAP asset lookup — API Management OData proxy ────────────────────────────
-const SAP_BASE_URL = process.env.BTP_PROXY_URL || 'https://devspace.test.apimanagement.eu10.hana.ondemand.com:443/asset/values';
+const SAP_BASE_URL = process.env.BTP_PROXY_URL || 'https://prdspace.prod01.apimanagement.eu10.hana.ondemand.com/10/assets';
+const BTP_API_KEY = process.env.BTP_API_KEY || '';
+
+function normalizeAssetPayload(payload) {
+  const candidates = [];
+  if (payload && typeof payload === 'object') {
+    if (Array.isArray(payload)) {
+      candidates.push(...payload);
+    } else {
+      candidates.push(payload);
+      if (payload.d) candidates.push(payload.d);
+      if (payload.value) candidates.push(payload.value);
+    }
+  }
+
+  for (const item of candidates) {
+    if (!item || typeof item !== 'object') continue;
+    const normalized = {
+      plant: item.plant || item.Plant || item.EvPlant || '',
+      department: item.department || item.Department || item.EvDepartment || '',
+      assetDescription: item.assetDescription || item.AssetDescription || item.EvAssetDesc || item.description || item.Description || '',
+      totalQuantity: item.totalQuantity != null ? String(item.totalQuantity) : (item.TotalQuantity != null ? String(item.TotalQuantity) : (item.EvTotalQuantity != null ? String(item.EvTotalQuantity) : (item.quantity != null ? String(item.quantity) : ''))),
+      yearOfPurchase: item.yearOfPurchase != null ? String(item.yearOfPurchase) : (item.YearOfPurchase != null ? String(item.YearOfPurchase) : (item.EvYearOfPurchase != null ? String(item.EvYearOfPurchase) : (item.purchaseYear != null ? String(item.purchaseYear) : ''))),
+      cost: item.cost != null ? String(item.cost) : (item.Cost != null ? String(item.Cost) : (item.EvAcquisitionValue != null ? String(item.EvAcquisitionValue) : (item.acquisitionValue != null ? String(item.acquisitionValue) : ''))),
+      bookValue: item.bookValue != null ? String(item.bookValue) : (item.BookValue != null ? String(item.BookValue) : (item.EvBookValue != null ? String(item.EvBookValue) : '')),
+    };
+
+    if (normalized.assetDescription || normalized.plant || normalized.cost || normalized.bookValue) {
+      return normalized;
+    }
+  }
+
+  return {
+    plant: '',
+    department: '',
+    assetDescription: '',
+    totalQuantity: '',
+    yearOfPurchase: '',
+    cost: '',
+    bookValue: '',
+  };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -61,11 +102,16 @@ async function loginWithSF(userId, password) {
  */
 async function verifySapCredentials(sapUser, sapPass) {
   const authHeader = `Basic ${Buffer.from(`${sapUser}:${sapPass}`).toString('base64')}`;
+  const headers = {
+    'Authorization': authHeader,
+    'Accept': 'application/json',
+    ...(BTP_API_KEY ? { 'x-api-key': BTP_API_KEY } : {}),
+  };
 
   let response;
   try {
     response = await axiosInstance.get(SAP_BASE_URL, {
-      headers: { 'Authorization': authHeader },
+      headers,
       timeout: 30000,
       validateStatus: () => true,
     });
@@ -76,7 +122,7 @@ async function verifySapCredentials(sapUser, sapPass) {
 
   if (response.status === 401 || response.status === 403) throw new Error('SAP_UNAUTHORIZED');
   if (response.status >= 400) {
-    console.error('[SAP Verify] HTTP error:', response.status);
+    console.error('[SAP Verify] HTTP error:', response.status, JSON.stringify(response.data));
     throw new Error('SAP_NETWORK_ERROR');
   }
 
@@ -90,12 +136,22 @@ async function verifySapCredentials(sapUser, sapPass) {
 async function fetchAssetFromSAP(assetNo, companyCode, sapUser, sapPass) {
   const authHeader  = `Basic ${Buffer.from(`${sapUser}:${sapPass}`).toString('base64')}`;
   const paddedAsset = String(assetNo).padStart(12, '0');
-  const url = `${SAP_BASE_URL}/AssetDetailSet(IvAssetNumber='${paddedAsset}',IvCompanyCode='${companyCode}')?sap-client=110&$format=json`;
+  const params = new URLSearchParams({
+    assetNumber: paddedAsset,
+    companyCode,
+    sapUser,
+    sapPass,
+  });
+  const url = `${SAP_BASE_URL}?${params.toString()}`;
 
   let response;
   try {
     response = await axiosInstance.get(url, {
-      headers: { 'Authorization': authHeader, 'Accept': 'application/json' },
+      headers: {
+        'Authorization': authHeader,
+        'Accept': 'application/json',
+        ...(BTP_API_KEY ? { 'x-api-key': BTP_API_KEY } : {}),
+      },
       timeout: 30000,
       validateStatus: () => true,
     });
@@ -111,22 +167,18 @@ async function fetchAssetFromSAP(assetNo, companyCode, sapUser, sapPass) {
     throw new Error('SAP_NETWORK_ERROR');
   }
 
-  const asset = response.data?.d;
-  if (!asset) throw new Error('SAP_NETWORK_ERROR');
+  const normalized = normalizeAssetPayload(response.data);
 
-  return {
-    plant:            asset.EvPlant            || '',
-    department:       asset.EvDepartment       || '',
-    assetDescription: asset.EvAssetDesc        || '',
-    totalQuantity:    asset.EvTotalQuantity    != null ? String(asset.EvTotalQuantity)    : '',
-    yearOfPurchase:   asset.EvYearOfPurchase   || '',
-    cost:             asset.EvAcquisitionValue != null ? String(asset.EvAcquisitionValue) : '',
-    bookValue:        asset.EvBookValue        != null ? String(asset.EvBookValue)        : '',
-  };
+  if (!normalized.assetDescription && !normalized.plant && !normalized.cost) {
+    throw new Error('SAP_NETWORK_ERROR');
+  }
+
+  return normalized;
 }
 
 module.exports = {
   verifySapCredentials,
   fetchAssetFromSAP,
   loginWithSF,
+  normalizeAssetPayload,
 };
