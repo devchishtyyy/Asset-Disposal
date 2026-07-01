@@ -167,7 +167,7 @@ function buildEffectiveHierarchy(initiator, companyHierarchy) {
     companyMap[step.stepKey] = step;
   }
   const initiatorApprovers = initiator?.approvers || {};
-  const INITIATOR_KEYS = ['dept_incharge', 'finance', 'bu_head'];
+  const INITIATOR_KEYS = ['dept_incharge', 'bu_head'];
 
   return DEFAULT_HIERARCHY_STEPS.map((step) => {
     if (INITIATOR_KEYS.includes(step.stepKey)) {
@@ -294,7 +294,7 @@ function removeAdmin(empNo) {
 
 // ── Role helpers (mirrors frontend companies.js) ───────────────────────────────
 
-const INITIATOR_APPROVER_KEYS = ['dept_incharge', 'finance', 'bu_head'];
+const INITIATOR_APPROVER_KEYS = ['dept_incharge', 'bu_head'];
 
 function getUserMemberships(empNo, adminConfig) {
   if (!empNo || !adminConfig?.companies) return [];
