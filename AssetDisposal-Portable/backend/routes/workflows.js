@@ -15,10 +15,20 @@ const router = express.Router();
 // ── Helpers ─────────────────────────────────────────────────────────────────────
 
 /** Filter workflows down to what this user is allowed to see */
-function filterWorkflowsForUser(all, empNo, adminConfig) {
+function filterWorkflowsForUser(all, empNo, adminConfig, selectedRole) {
   if (empNo === SUPER_ADMIN_EMP_NO || isAdmin(empNo)) return all;
 
-  const memberships = getUserMemberships(empNo, adminConfig);
+  let memberships = getUserMemberships(empNo, adminConfig);
+
+  // If the user's JWT carries a selectedRole, restrict the view to that role only
+  if (selectedRole) {
+    memberships = memberships.filter((m) => {
+      if (m.type !== selectedRole.type) return false;
+      if (m.companyId !== selectedRole.companyId) return false;
+      if (selectedRole.type === 'approver' && m.stepKey !== selectedRole.stepKey) return false;
+      return true;
+    });
+  }
 
   return all.filter((wf) =>
     memberships.some((m) => {
@@ -56,7 +66,7 @@ function filterWorkflowsForUser(all, empNo, adminConfig) {
 router.get('/', authenticate, (req, res) => {
   const adminConfig = loadAdminConfig();
   const all         = getAllWorkflows();
-  const visible     = filterWorkflowsForUser(all, req.user.empNo, adminConfig);
+  const visible     = filterWorkflowsForUser(all, req.user.empNo, adminConfig, req.user.selectedRole || null);
   // Return as { [id]: workflow } map to match frontend expectations
   const map = {};
   for (const wf of visible) map[wf.id] = wf;
@@ -73,6 +83,12 @@ router.post('/', authenticate, async (req, res) => {
   const adminConfig = loadAdminConfig();
   const company     = adminConfig.companies?.[companyId];
   if (!company) return res.status(400).json({ error: 'Unknown company.' });
+
+  // If the session has a selected role, it must be the initiator role to submit
+  const selectedRole = req.user.selectedRole;
+  if (selectedRole && selectedRole.type !== 'initiator') {
+    return res.status(403).json({ error: 'Switch to your initiator role to submit workflows.' });
+  }
 
   // Verify caller is an initiator for this company
   const memberships = getUserMemberships(req.user.empNo, adminConfig);
