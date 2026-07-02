@@ -3,111 +3,95 @@
 const db = require('../db.js');
 
 const NEW_INITIATORS = [
-  { initiator: 'Muhammad Yasir Khurshid',   department: 'PB', dept_incharge: 'Faisal Amjad',           bu_head: 'Faisal Haneef' },
-  { initiator: 'Adnan Sarwar',               department: 'PB', dept_incharge: 'sarosh sohail',           bu_head: 'Faisal Haneef' },
-  { initiator: 'Muhammad Tariq',             department: 'CD', dept_incharge: 'Arslan Shahid',           bu_head: 'Syed Ali Murtaza Bukhari' },
-  { initiator: 'Hammas Saleem',              department: 'CD', dept_incharge: 'Arslan Shahid',           bu_head: 'Syed Ali Murtaza Bukhari' },
-  { initiator: 'Syed Kashif Ali Shah',       department: 'CD', dept_incharge: 'Muhammad Maaz Umlash',   bu_head: 'Syed Ali Murtaza Bukhari' },
-  { initiator: 'Muhammad Ali',               department: 'PB', dept_incharge: 'sarosh sohail',           bu_head: 'Faisal Haneef' },
-  { initiator: 'Saqib Amin',                 department: 'PB', dept_incharge: 'sarosh sohail',           bu_head: 'Faisal Haneef' },
-  { initiator: 'Nabeel Shahid',              department: 'PB', dept_incharge: 'sarosh sohail',           bu_head: 'Faisal Haneef' },
-  { initiator: 'Muhammad Zubair Sabir',      department: 'PB', dept_incharge: 'Ahsan Anwar',             bu_head: 'Farhan Amin' },
-  { initiator: 'Noor Zaman',                 department: 'CD', dept_incharge: 'Muhammad Nadeem Raza',    bu_head: 'Farhan Amin' },
-  { initiator: 'Saad Shoaib Nangiana',       department: 'CD', dept_incharge: 'Salik Masood Khan',       bu_head: 'Syed Ali Murtaza Bukhari' },
-  { initiator: 'Muhammad Jahangeer',         department: 'CD', dept_incharge: 'Salik Masood Khan',       bu_head: 'Syed Ali Murtaza Bukhari' },
-  { initiator: 'Humail Bhadki',              department: 'CD', dept_incharge: 'Salik Masood Khan',       bu_head: 'Syed Ali Murtaza Bukhari' },
-  { initiator: 'Muhammad Asim',              department: 'CD', dept_incharge: 'Salik Masood Khan',       bu_head: 'Syed Ali Murtaza Bukhari' },
-  { initiator: 'Muhammad Ramzan',            department: 'CD', dept_incharge: 'zain asif',               bu_head: 'Syed Ali Murtaza Bukhari' },
-  { initiator: 'Salar Fawzi Khawaja',        department: 'CD', dept_incharge: 'Salik Masood Khan',       bu_head: 'Syed Ali Murtaza Bukhari' },
-  { initiator: 'Muhammad Akram Tahir',       department: 'PB', dept_incharge: 'Asif Ali',                bu_head: 'Muneef Abid' },
-  { initiator: 'Naveed Ahmad',               department: 'PB', dept_incharge: 'Asif Ali',                bu_head: 'Muneef Abid' },
-  { initiator: 'Muhammad Rashid Naeem',      department: 'PB', dept_incharge: 'Waqas Ilyas',             bu_head: 'Muneef Abid' },
-  { initiator: 'Muhammad Omar Shafique',     department: 'PB', dept_incharge: 'Waqas Ilyas',             bu_head: 'Muneef Abid' },
-  { initiator: 'Asif Waseem',                department: 'PB', dept_incharge: 'Asif Ali',                bu_head: 'Muneef Abid' },
-  { initiator: 'Muhammad Amjad',             department: 'PB', dept_incharge: 'Khushi Mohammad',         bu_head: 'Farhan Amin' },
-  { initiator: 'Jabran Pasha',               department: 'PB', dept_incharge: 'Afia Khurshid',           bu_head: 'Farhan Amin' },
-  { initiator: 'Imran Khan',                 department: 'PB', dept_incharge: 'Uffan Sharif',            bu_head: 'Aamir Janjua' },
-  { initiator: 'Amad Akram',                 department: 'PB', dept_incharge: 'Uffan Sharif',            bu_head: 'Aamir Janjua' },
-  { initiator: 'Ahmad Afzal',                department: 'CD', dept_incharge: 'Mahnoor Khan',            bu_head: 'Syed Ali Murtaza Bukhari' },
-  { initiator: 'Salman Mansha',              department: 'PB', dept_incharge: 'Wasik Ali Syed',          bu_head: 'Aamir Janjua' },
-  { initiator: 'Ameer Hassan',               department: 'PB', dept_incharge: 'Wasik Ali Syed',          bu_head: 'Aamir Janjua' },
-  { initiator: 'Muhammad Maroof Hussain',    department: 'PB', dept_incharge: 'Wasik Ali Syed',          bu_head: 'Aamir Janjua' },
-  { initiator: 'Fakhar Uz Zaman',            department: 'CD', dept_incharge: 'Arslan Shahid',           bu_head: 'Syed Ali Murtaza Bukhari' },
-  { initiator: 'Waqas Ahmad',                department: 'PB', dept_incharge: 'Wasik Ali Syed',          bu_head: 'Aamir Janjua' },
-  { initiator: 'Syed Muhammad Taqi',         department: 'PB', dept_incharge: 'Syed Sarosh Tariq',       bu_head: 'Aamir Janjua' },
-  { initiator: 'Ubaid Ullah',                department: 'PB', dept_incharge: 'Financial Controller',    bu_head: 'Bilal Naeem' },
-  { initiator: 'Muhammad Sabir',             department: 'CD', dept_incharge: 'Muhammad Maaz Umlash',   bu_head: 'Syed Ali Murtaza Bukhari' },
-  { initiator: 'Arshad Mahmood',             department: 'CD', dept_incharge: 'Muhammad Maaz Umlash',   bu_head: 'Syed Ali Murtaza Bukhari' },
-  { initiator: 'Shahbaz Ahmad',              department: 'CD', dept_incharge: 'Muhammad Maaz Umlash',   bu_head: 'Syed Ali Murtaza Bukhari' },
-  { initiator: 'Ayaz Bashir',                department: 'CD', dept_incharge: 'Muhammad Maaz Umlash',   bu_head: 'Syed Ali Murtaza Bukhari' },
-  { initiator: 'Ramiz Basharat',             department: 'PB', dept_incharge: 'Financial Controller',    bu_head: 'Bilal Naeem' },
-  { initiator: 'Tahir Ahmad',                department: 'PB', dept_incharge: 'Financial Controller',    bu_head: 'Bilal Naeem' },
-  { initiator: 'Matthew Abneer Chand',       department: 'PB', dept_incharge: 'Financial Controller',    bu_head: 'Bilal Naeem' },
-  { initiator: 'Asma Nawaz',                 department: 'PB', dept_incharge: 'Financial Controller',    bu_head: 'Bilal Naeem' },
-  { initiator: 'Qaisar Iqbal',               department: 'PB', dept_incharge: 'Wasik Ali Syed',          bu_head: 'Aamir Janjua' },
-  { initiator: 'Hassnain .',                 department: 'PB', dept_incharge: 'Wasik Ali Syed',          bu_head: 'Aamir Janjua' },
-  { initiator: 'Ghulam Shabir',              department: 'PB', dept_incharge: 'Wasik Ali Syed',          bu_head: 'Aamir Janjua' },
-  { initiator: 'Muhammad Imran',             department: 'PB', dept_incharge: 'Wasik Ali Syed',          bu_head: 'Aamir Janjua' },
-  { initiator: 'Rabia Sadaf',                department: 'PB', dept_incharge: 'Wasik Ali Syed',          bu_head: 'Aamir Janjua' },
-  { initiator: 'Aqeel Ahmed',                department: 'PB', dept_incharge: 'Wasik Ali Syed',          bu_head: 'Aamir Janjua' },
-  { initiator: 'Syed Ahmad Ali Shah',        department: 'PB', dept_incharge: 'Wasik Ali Syed',          bu_head: 'Aamir Janjua' },
-  { initiator: 'Zahid Mushtaq',              department: 'PB', dept_incharge: 'Wasik Ali Syed',          bu_head: 'Aamir Janjua' },
-  { initiator: 'Muhammad Asghar',            department: 'PB', dept_incharge: 'Wasik Ali Syed',          bu_head: 'Aamir Janjua' },
-  { initiator: 'Muhammad Amin',              department: 'PB', dept_incharge: 'Muhammad Nauman Zafar',   bu_head: 'Aamir Janjua' },
-  { initiator: 'Syed Wajid Ali Bukhari',     department: 'PB', dept_incharge: 'Muhammad Nauman Zafar',   bu_head: 'Aamir Janjua' },
-  { initiator: 'Shazam Toqeer',              department: 'CD', dept_incharge: 'Syed Kashif Ali Shah',    bu_head: 'Syed Ali Murtaza Bukhari' },
-  { initiator: 'Muhammad Nauman Zafar',      department: 'PB', dept_incharge: 'Muhammad Nauman Zafar',   bu_head: 'Aamir Janjua' },
-  { initiator: 'Hafiz Naseer Ahmad',         department: 'PB', dept_incharge: 'Muhammad Nauman Zafar',   bu_head: 'Aamir Janjua' },
-  { initiator: 'Muhammad Yassar Javeed',     department: 'PB', dept_incharge: 'Muhammad Nauman Zafar',   bu_head: 'Aamir Janjua' },
-  { initiator: 'Muhammad Hamza Zulfiqar',    department: 'PB', dept_incharge: 'Muhammad Nauman Zafar',   bu_head: 'Aamir Janjua' },
-  { initiator: 'Muhammad Shahid Ullah Butt', department: 'PB', dept_incharge: 'Muhammad Nauman Zafar',   bu_head: 'Aamir Janjua' },
-  { initiator: 'Muhammad Hussaan',           department: 'PB', dept_incharge: 'Emad Ud Din Ahmed',       bu_head: 'Aamir Janjua' },
-  { initiator: 'Sharjil Naushad',            department: 'PB', dept_incharge: 'Uffan Sharif',            bu_head: 'Aamir Janjua' },
-  { initiator: 'Muhammad Akram Jawaid',      department: 'PB', dept_incharge: 'Wasik Ali Syed',          bu_head: 'Aamir Janjua' },
+  { employee_no: '30001806', initiator_name: 'Muhammad Yasir Khurshid',   dept_incharge_emp_no: '10009578', dept_incharge_name: 'Faisal Amjad',           bu_head_emp_no: '10009572', bu_head_name: 'Faisal Haneef',               department: 'PB' },
+  { employee_no: '30001537', initiator_name: 'Adnan Sarwar',               dept_incharge_emp_no: '10009631', dept_incharge_name: 'sarosh sohail',           bu_head_emp_no: '10009572', bu_head_name: 'Faisal Haneef',               department: 'PB' },
+  { employee_no: '30000364', initiator_name: 'Muhammad Tariq',             dept_incharge_emp_no: '30000824', dept_incharge_name: 'Arslan Shahid',           bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001935', initiator_name: 'Hammas Saleem',              dept_incharge_emp_no: '30000824', dept_incharge_name: 'Arslan Shahid',           bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001188', initiator_name: 'Syed Kashif Ali Shah',       dept_incharge_emp_no: '30000831', dept_incharge_name: 'Muhammad Maaz Umlash',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001503', initiator_name: 'Muhammad Ali',               dept_incharge_emp_no: '10009631', dept_incharge_name: 'sarosh sohail',           bu_head_emp_no: '10009572', bu_head_name: 'Faisal Haneef',               department: 'PB' },
+  { employee_no: '30001513', initiator_name: 'Saqib Amin',                 dept_incharge_emp_no: '10009631', dept_incharge_name: 'sarosh sohail',           bu_head_emp_no: '10009572', bu_head_name: 'Faisal Haneef',               department: 'PB' },
+  { employee_no: '30001540', initiator_name: 'Aamir Mehmood',              dept_incharge_emp_no: '10009631', dept_incharge_name: 'sarosh sohail',           bu_head_emp_no: '10009572', bu_head_name: 'Faisal Haneef',               department: 'PB' },
+  { employee_no: '30000305', initiator_name: 'Khurram Shahzad',            dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30000455', initiator_name: 'Muhammad Waqas',             dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001602', initiator_name: 'Arslan Ahmed',               dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001716', initiator_name: 'Ahmed Raza',                 dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30000303', initiator_name: 'Rashid Mehmood',             dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30000325', initiator_name: 'Imran Hussain',              dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30000673', initiator_name: 'Ali Raza',                   dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30000388', initiator_name: 'Waseem Sajjad',              dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30000389', initiator_name: 'Waqas Ahmad',                dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30000407', initiator_name: 'Asim Hussain',               dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30000424', initiator_name: 'Ali Raza',                   dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001138', initiator_name: 'Nabeel Shaukat',             dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30000454', initiator_name: 'Khuram Shahzad',             dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30000494', initiator_name: 'Ali Raza Anjum',             dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30000508', initiator_name: 'Zubair Ahmad',               dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30000570', initiator_name: 'Adeel Anwar',                dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30000574', initiator_name: 'Khurram Abbas Shah',         dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001960', initiator_name: 'Wasik Ali Syed',             dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30001948', initiator_name: 'Muhammad Naveed',            dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30001715', initiator_name: 'Nauman Shaukat',             dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30001460', initiator_name: 'Zubair Ahmad',               dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30000854', initiator_name: 'Muhammad Husnain',           dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30000450', initiator_name: 'Khurram Shahzad',            dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30000385', initiator_name: 'Syed Jafar Ali',             dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30000331', initiator_name: 'Rana Farhan Arshad',         dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30000318', initiator_name: 'Muhammad Umair',             dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30000216', initiator_name: 'Malik Zeeshan Ahmad',        dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30000049', initiator_name: 'Waseem Sajjad',              dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30001944', initiator_name: 'Muhammad Awais',             dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30001859', initiator_name: 'Ali Raza',                   dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30001804', initiator_name: 'Arslan Ali',                 dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30001736', initiator_name: 'Syed Ahmad Ali Shah',        dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30000321', initiator_name: 'Zahid Mushtaq',              dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30000361', initiator_name: 'Muhammad Asghar',            dept_incharge_emp_no: '30001960', dept_incharge_name: 'Wasik Ali Syed',          bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30000035', initiator_name: 'Muhammad Amin',              dept_incharge_emp_no: '30000021', dept_incharge_name: 'Muhammad Nauman Zafar',   bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30000095', initiator_name: 'Syed Wajid Ali Bukhari',     dept_incharge_emp_no: '30000021', dept_incharge_name: 'Muhammad Nauman Zafar',   bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30000595', initiator_name: 'Shazam Toqeer',              dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30000021', initiator_name: 'Muhammad Nauman Zafar',      dept_incharge_emp_no: '30000021', dept_incharge_name: 'Muhammad Nauman Zafar',   bu_head_emp_no: '30001966', bu_head_name: 'Aamir Janjua',               department: 'PB' },
+  { employee_no: '30000582', initiator_name: 'Hafiz Naseer Ahmad',         dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001407', initiator_name: 'Ali Raza',                   dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001416', initiator_name: 'Muhammad Bilal',             dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001438', initiator_name: 'Ali Shair',                  dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001439', initiator_name: 'Ehsan Elahi',                dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001461', initiator_name: 'Muhammad Ramzan',            dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001490', initiator_name: 'Hafiz Muhammad Ahmad',       dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001491', initiator_name: 'Abid Ali',                   dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001550', initiator_name: 'Zubair Latif',               dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001569', initiator_name: 'Sajid Mahmood',              dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001601', initiator_name: 'Yasir Ali',                  dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001604', initiator_name: 'Mian Muhammad Adeel',        dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001640', initiator_name: 'Naeem Shehzad',              dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001643', initiator_name: 'Muhammad Imran',             dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
+  { employee_no: '30001644', initiator_name: 'Tanveer Ahmed',              dept_incharge_emp_no: '30001188', dept_incharge_name: 'Syed Kashif Ali Shah',   bu_head_emp_no: '30000027', bu_head_name: 'Syed Ali Murtaza Bukhari',   department: 'CD' },
 ];
-
-function makeInitiatorEntry(row) {
-  return {
-    empNo: '',
-    name:  row.initiator,
-    email: '',
-    approvers: {
-      dept_incharge: { empNo: '', name: row.dept_incharge, email: '' },
-      bu_head:       { empNo: '', name: row.bu_head,       email: '' },
-    },
-  };
-}
 
 const config = db.loadAdminConfig();
 
-let addedPB = 0;
-let addedCD = 0;
+// Replace initiators for PB and CD entirely with the new complete dataset
+config.companies.PB.initiators = [];
+config.companies.CD.initiators = [];
 
 for (const row of NEW_INITIATORS) {
-  const companyKey = row.department; // already 'PB' or 'CD'
-  const company    = config.companies[companyKey];
+  const company = config.companies[row.department];
   if (!company) {
-    console.warn(`Unknown company key: ${companyKey} for ${row.initiator}`);
+    console.warn(`Unknown company key: ${row.department} for ${row.initiator_name}`);
     continue;
   }
-
-  const alreadyExists = company.initiators.some(
-    (i) => i.name.trim().toLowerCase() === row.initiator.trim().toLowerCase()
-  );
-  if (alreadyExists) {
-    console.log(`SKIP (exists): ${row.initiator} [${companyKey}]`);
-    continue;
-  }
-
-  company.initiators.push(makeInitiatorEntry(row));
-  if (companyKey === 'PB') addedPB++;
-  else addedCD++;
-  console.log(`ADD: ${row.initiator} [${companyKey}]`);
+  company.initiators.push({
+    empNo: row.employee_no,
+    name:  row.initiator_name,
+    email: '',
+    approvers: {
+      dept_incharge: { empNo: row.dept_incharge_emp_no, name: row.dept_incharge_name, email: '' },
+      bu_head:       { empNo: row.bu_head_emp_no,       name: row.bu_head_name,       email: '' },
+    },
+  });
+  console.log(`ADD [${row.department}] ${row.employee_no} — ${row.initiator_name}`);
 }
 
 db.saveAdminConfig(config);
 
-console.log(`\nDone. Added ${addedPB} to PB, ${addedCD} to CD.`);
-console.log(`PB total initiators: ${config.companies.PB.initiators.length}`);
-console.log(`CD total initiators: ${config.companies.CD.initiators.length}`);
-console.log('\nNOTE: empNo is blank for all new entries. Fill them in via the Admin Panel so initiators can log in.');
+console.log(`\nDone.`);
+console.log(`PB initiators: ${config.companies.PB.initiators.length}`);
+console.log(`CD initiators: ${config.companies.CD.initiators.length}`);
