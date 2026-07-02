@@ -66,6 +66,12 @@ router.post('/asset', authenticate, async (req, res) => {
     if (err.message === 'SAP_NOT_FOUND') {
       return res.status(404).json({ error: 'SAP_NOT_FOUND' });
     }
+    if (err.message === 'SAP_BAD_KEYS') {
+      return res.status(400).json({
+        error: 'SAP_BAD_KEYS',
+        detail: 'The asset key values were rejected by the SAP endpoint. Check the asset number and company code format.',
+      });
+    }
     if (err.message === 'SAP_UNAUTHORIZED') {
       return res.status(401).json({
         error: 'SAP_UNAUTHORIZED',

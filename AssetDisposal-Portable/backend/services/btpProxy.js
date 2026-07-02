@@ -13,7 +13,9 @@ const SF_AUTH_URL   = 'https://api44.sapsf.com/odata/v2/Background_Community?$to
 const SF_COMPANY_ID = 'packagesli';
 
 // ── SAP asset lookup — API Management OData proxy ────────────────────────────
-const SAP_BASE_URL = process.env.BTP_PROXY_URL || 'https://prdspace.prod01.apimanagement.eu10.hana.ondemand.com/10/assets';
+const SAP_ASSET_ENDPOINT_URL = process.env.SAP_ASSET_ENDPOINT_URL || process.env.BTP_PROXY_URL || 'https://prdspace.prod01.apimanagement.eu10.hana.ondemand.com/10/assets/AssetDetailSet';
+const SAP_ASSET_USERNAME = process.env.SAP_ASSET_USERNAME || process.env.SAP_API_USERNAME || process.env.SAP_USERNAME || '';
+const SAP_ASSET_PASSWORD = process.env.SAP_ASSET_PASSWORD || process.env.SAP_API_PASSWORD || process.env.SAP_PASSWORD || '';
 const BTP_API_KEY = process.env.BTP_API_KEY || '';
 const BTP_AUTH_TOKEN = process.env.BTP_AUTH_TOKEN || process.env.BTP_TOKEN || '';
 
@@ -104,29 +106,45 @@ async function loginWithSF(userId, password) {
  * Verify SAP credentials against the API Management proxy.
  * A successful GET (200) confirms the credentials are valid.
  */
-function buildProxyHeaders(sapUser, sapPass) {
-  const headers = { Accept: 'application/json' };
+function resolveSapCredentials(sapUser, sapPass) {
+  return {
+    username: sapUser || SAP_ASSET_USERNAME || '',
+    password: sapPass || SAP_ASSET_PASSWORD || '',
+  };
+}
+
+function buildAssetDetailUrl(assetNo, companyCode) {
+  const paddedAsset = String(assetNo).padStart(12, '0');
+  return `${SAP_ASSET_ENDPOINT_URL}(IvAssetNumber='${paddedAsset}',IvCompanyCode='${companyCode}')?$format=json`;
+}
+
+function buildProxyRequestConfig(sapUser, sapPass) {
+  const { username, password } = resolveSapCredentials(sapUser, sapPass);
+  const config = {
+    timeout: 30000,
+    validateStatus: () => true,
+    headers: { Accept: 'application/json' },
+  };
+
   if (BTP_AUTH_TOKEN) {
-    headers.Authorization = `Bearer ${BTP_AUTH_TOKEN}`;
+    config.headers.Authorization = `Bearer ${BTP_AUTH_TOKEN}`;
   } else {
-    headers.Authorization = `Basic ${Buffer.from(`${sapUser}:${sapPass}`).toString('base64')}`;
+    config.auth = { username, password };
   }
+
   if (BTP_API_KEY) {
-    headers['x-api-key'] = BTP_API_KEY;
+    config.headers['x-api-key'] = BTP_API_KEY;
   }
-  return headers;
+
+  return config;
 }
 
 async function verifySapCredentials(sapUser, sapPass) {
-  const headers = buildProxyHeaders(sapUser, sapPass);
+  const requestConfig = buildProxyRequestConfig(sapUser, sapPass);
 
   let response;
   try {
-    response = await axiosInstance.get(SAP_BASE_URL, {
-      headers,
-      timeout: 30000,
-      validateStatus: () => true,
-    });
+    response = await axiosInstance.get(SAP_ASSET_ENDPOINT_URL, requestConfig);
   } catch (err) {
     console.error('[SAP Verify] Network error:', err.message);
     throw new Error('SAP_NETWORK_ERROR');
@@ -146,68 +164,39 @@ async function verifySapCredentials(sapUser, sapPass) {
  * Asset number is zero-padded to 12 digits as required by the SAP entity key.
  */
 async function fetchAssetFromSAP(assetNo, companyCode, sapUser, sapPass) {
-  const paddedAsset = String(assetNo).padStart(12, '0');
-  const headers = buildProxyHeaders(sapUser, sapPass);
-  const params = new URLSearchParams({
-    assetNumber: paddedAsset,
-    companyCode,
-    sapUser,
-    sapPass,
-  });
-  const queryUrl = `${SAP_BASE_URL}?${params.toString()}`;
-  const payloads = [
-    { method: 'get', url: queryUrl, data: undefined },
-    { method: 'post', url: SAP_BASE_URL, data: { assetNumber: paddedAsset, companyCode, sapUser, sapPass } },
-    { method: 'post', url: SAP_BASE_URL, data: { assetNo: paddedAsset, companyCode, sapUser, sapPass } },
-  ];
+  const url = buildAssetDetailUrl(assetNo, companyCode);
+  const requestConfig = buildProxyRequestConfig(sapUser, sapPass);
 
-  let lastError = null;
-
-  for (const candidate of payloads) {
-    let response;
-    try {
-      response = await axiosInstance({
-        method: candidate.method,
-        url: candidate.url,
-        headers,
-        data: candidate.data,
-        timeout: 30000,
-        validateStatus: () => true,
-      });
-    } catch (err) {
-      lastError = err;
-      console.error('[SAP Asset] Network error:', err.message);
-      continue;
-    }
-
-    if (response.status === 401 || response.status === 403) {
-      console.warn('[SAP Asset] Remote endpoint rejected the request', response.status, JSON.stringify(response.data));
-      lastError = new Error('SAP_UNAUTHORIZED');
-      continue;
-    }
-    if (response.status === 404) {
-      lastError = new Error('SAP_NOT_FOUND');
-      continue;
-    }
-    if (response.status >= 400) {
-      console.error('[SAP Asset] HTTP error:', response.status, JSON.stringify(response.data));
-      lastError = new Error('SAP_NETWORK_ERROR');
-      continue;
-    }
-
-    const normalized = normalizeAssetPayload(response.data);
-    if (!normalized.assetDescription && !normalized.plant && !normalized.cost) {
-      lastError = new Error('SAP_NETWORK_ERROR');
-      continue;
-    }
-
-    return normalized;
+  let response;
+  try {
+    response = await axiosInstance.get(url, requestConfig);
+  } catch (err) {
+    console.error('[SAP Asset] Network error:', err.message);
+    throw new Error('SAP_NETWORK_ERROR');
   }
 
-  if (lastError) {
-    throw lastError;
+  if (response.status === 400) {
+    console.error('[SAP Asset] Bad keys:', JSON.stringify(response.data));
+    throw new Error('SAP_BAD_KEYS');
   }
-  throw new Error('SAP_NETWORK_ERROR');
+  if (response.status === 401 || response.status === 403) {
+    console.warn('[SAP Asset] Remote endpoint rejected the request', response.status, JSON.stringify(response.data));
+    throw new Error('SAP_UNAUTHORIZED');
+  }
+  if (response.status === 404) {
+    throw new Error('SAP_NOT_FOUND');
+  }
+  if (response.status >= 400) {
+    console.error('[SAP Asset] HTTP error:', response.status, JSON.stringify(response.data));
+    throw new Error('SAP_NETWORK_ERROR');
+  }
+
+  const normalized = normalizeAssetPayload(response.data);
+  if (!normalized.assetDescription && !normalized.plant && !normalized.cost && !normalized.yearOfPurchase && !normalized.bookValue) {
+    throw new Error('SAP_NETWORK_ERROR');
+  }
+
+  return normalized;
 }
 
 module.exports = {
@@ -215,5 +204,6 @@ module.exports = {
   fetchAssetFromSAP,
   loginWithSF,
   normalizeAssetPayload,
-  buildProxyHeaders,
+  buildAssetDetailUrl,
+  buildProxyRequestConfig,
 };
