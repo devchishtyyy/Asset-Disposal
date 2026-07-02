@@ -13,7 +13,10 @@ const SF_AUTH_URL   = 'https://api44.sapsf.com/odata/v2/Background_Community?$to
 const SF_COMPANY_ID = 'packagesli';
 
 // ── SAP asset lookup — API Management OData proxy ────────────────────────────
+// SAP_ASSET_ENDPOINT_URL: entity-set path used for key-predicate reads (AssetDetailSet)
 const SAP_ASSET_ENDPOINT_URL = process.env.SAP_ASSET_ENDPOINT_URL || 'https://prdspace.prod01.apimanagement.eu10.hana.ondemand.com/10/assets/AssetDetailSet';
+// SAP_SERVICE_URL: OData service root used only for credential verification (returns metadata/200)
+const SAP_SERVICE_URL = process.env.BTP_PROXY_URL || 'https://prdspace.prod01.apimanagement.eu10.hana.ondemand.com/10/assets';
 const SAP_ASSET_USERNAME = process.env.SAP_ASSET_USERNAME || process.env.SAP_API_USERNAME || process.env.SAP_USERNAME || 'FF_IT3P_1724';
 const SAP_ASSET_PASSWORD = process.env.SAP_ASSET_PASSWORD || process.env.SAP_API_PASSWORD || process.env.SAP_PASSWORD || '';
 const BTP_API_KEY = process.env.BTP_API_KEY || '';
@@ -144,7 +147,7 @@ async function verifySapCredentials(sapUser, sapPass) {
 
   let response;
   try {
-    response = await axiosInstance.get(SAP_ASSET_ENDPOINT_URL, requestConfig);
+    response = await axiosInstance.get(SAP_SERVICE_URL, requestConfig);
   } catch (err) {
     console.error('[SAP Verify] Network error:', err.message);
     throw new Error('SAP_NETWORK_ERROR');
