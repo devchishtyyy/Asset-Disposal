@@ -300,13 +300,12 @@ function getUserMemberships(empNo, adminConfig) {
   if (!empNo || !adminConfig?.companies) return [];
   const result = [];
   for (const [companyId, company] of Object.entries(adminConfig.companies)) {
-    // Check if this person is an initiator
+    // Check if this person is an initiator (no early-exit — they may also be an approver)
     const initiator = (company.initiators || []).find(
       (i) => i.empNo?.trim() === empNo.trim()
     );
     if (initiator) {
       result.push({ type: 'initiator', companyId, empNo: initiator.empNo, name: initiator.name || empNo, email: initiator.email || '' });
-      continue;
     }
 
     // Check company-level hierarchy steps
@@ -316,11 +315,12 @@ function getUserMemberships(empNo, adminConfig) {
     if (stepIndex >= 0) {
       const step = company.hierarchy[stepIndex];
       result.push({ type: 'approver', companyId, stepIndex, stepKey: step.stepKey, stepLabel: step.label, empNo: step.empNo, name: step.name || empNo, email: step.email || '' });
+      // Company-wide hierarchy role found — per-initiator assignments are redundant for the same step
       continue;
     }
 
-    // Check per-initiator approvers (dept_incharge, finance, bu_head)
-    // A person may be assigned to one of these roles for a specific initiator
+    // Check per-initiator approvers (dept_incharge, bu_head) — only when not already
+    // covered by the company-wide hierarchy for that step key.
     const seenStepKeys = new Set();
     for (const ini of (company.initiators || [])) {
       for (const stepKey of INITIATOR_APPROVER_KEYS) {
