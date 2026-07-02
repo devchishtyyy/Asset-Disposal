@@ -39,19 +39,21 @@ router.post('/verify', authenticate, async (req, res) => {
   }
 });
 
-// POST /api/sap/asset — look up an asset from SAP
-router.post('/asset', authenticate, async (req, res) => {
-  const { assetNo, companyCode, sapUser, sapPass } = req.body;
-  if (!assetNo || !companyCode || !sapUser || !sapPass) {
-    return res.status(400).json({ error: 'assetNo, companyCode, sapUser and sapPass are required.' });
+// GET /api/sap/asset — look up an asset from SAP
+router.get('/asset', authenticate, async (req, res) => {
+  const assetNumber = req.query.assetNumber || req.query.assetNo;
+  const companyCode = req.query.companyCode;
+
+  if (!assetNumber || !companyCode) {
+    return res.status(400).json({ error: 'assetNumber and companyCode are required.' });
   }
 
   if (SAP_MOCK) {
-    console.info('[SAP Mock] asset lookup —', assetNo, '/', companyCode);
+    console.info('[SAP Mock] asset lookup —', assetNumber, '/', companyCode);
     return res.json({
       plant:            'MOCK-PLANT',
       department:       'Mock Department',
-      assetDescription: `Mock Asset — ${assetNo}`,
+      assetDescription: `Mock Asset — ${assetNumber}`,
       totalQuantity:    '1',
       yearOfPurchase:   '2021',
       cost:             '500000',
@@ -60,7 +62,7 @@ router.post('/asset', authenticate, async (req, res) => {
   }
 
   try {
-    const data = await fetchAssetFromSAP(assetNo, companyCode, sapUser, sapPass);
+    const data = await fetchAssetFromSAP(assetNumber, companyCode);
     res.json(data);
   } catch (err) {
     if (err.message === 'SAP_NOT_FOUND') {

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { normalizeAssetPayload } = require('../services/btpProxy');
+const { normalizeAssetPayload, buildAssetDetailUrl } = require('../services/btpProxy');
 
 test('normalizes a nested asset payload into the app contract', () => {
   const payload = {
@@ -47,4 +47,11 @@ test('normalizes array-based payloads and falls back to common field names', () 
     cost: '1200',
     bookValue: '800'
   });
+});
+
+test('builds the SAP entity-read URL with query-free OData key predicates', () => {
+  assert.equal(
+    buildAssetDetailUrl('15000011', '1000'),
+    "https://prdspace.prod01.apimanagement.eu10.hana.ondemand.com/10/assets/AssetDetailSet(IvAssetNumber='15000011',IvCompanyCode='1000')"
+  );
 });

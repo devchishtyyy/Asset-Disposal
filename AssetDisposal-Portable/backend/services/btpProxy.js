@@ -14,7 +14,7 @@ const SF_COMPANY_ID = 'packagesli';
 
 // ── SAP asset lookup — API Management OData proxy ────────────────────────────
 const SAP_ASSET_ENDPOINT_URL = process.env.SAP_ASSET_ENDPOINT_URL || process.env.BTP_PROXY_URL || 'https://prdspace.prod01.apimanagement.eu10.hana.ondemand.com/10/assets/AssetDetailSet';
-const SAP_ASSET_USERNAME = process.env.SAP_ASSET_USERNAME || process.env.SAP_API_USERNAME || process.env.SAP_USERNAME || '';
+const SAP_ASSET_USERNAME = process.env.SAP_ASSET_USERNAME || process.env.SAP_API_USERNAME || process.env.SAP_USERNAME || 'FF_IT3P_1724';
 const SAP_ASSET_PASSWORD = process.env.SAP_ASSET_PASSWORD || process.env.SAP_API_PASSWORD || process.env.SAP_PASSWORD || '';
 const BTP_API_KEY = process.env.BTP_API_KEY || '';
 const BTP_AUTH_TOKEN = process.env.BTP_AUTH_TOKEN || process.env.BTP_TOKEN || '';
@@ -114,8 +114,8 @@ function resolveSapCredentials(sapUser, sapPass) {
 }
 
 function buildAssetDetailUrl(assetNo, companyCode) {
-  const paddedAsset = String(assetNo).padStart(12, '0');
-  return `${SAP_ASSET_ENDPOINT_URL}(IvAssetNumber='${paddedAsset}',IvCompanyCode='${companyCode}')?$format=json`;
+  const assetNumber = String(assetNo ?? '').trim();
+  return `${SAP_ASSET_ENDPOINT_URL}(IvAssetNumber='${assetNumber}',IvCompanyCode='${companyCode}')`;
 }
 
 function buildProxyRequestConfig(sapUser, sapPass) {
@@ -129,7 +129,7 @@ function buildProxyRequestConfig(sapUser, sapPass) {
   if (BTP_AUTH_TOKEN) {
     config.headers.Authorization = `Bearer ${BTP_AUTH_TOKEN}`;
   } else {
-    config.auth = { username, password };
+    config.headers.Authorization = `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`;
   }
 
   if (BTP_API_KEY) {
